@@ -1,0 +1,35 @@
+{
+  "name": "swot-home",
+  "version": "0.0.0",
+  "description": "SWOT home",
+  "main": "index.js",
+  "scripts": {
+    "test": "lab -cL -t 100 -a code"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leanhubIo/swot-home.git"
+  },
+  "author": "vdeturckheim",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/leanhubIo/swot-home/issues"
+  },
+  "homepage": "https://github.com/leanhubIo/swot-home#readme",
+  "dependencies": {
+    "bcrypt": "^0.8.6",
+    "boom": "^3.1.2",
+    "hapi-auth-basic": "^4.1.0",
+    "hapi-auth-bearer-token": "^4.1.0",
+    "http-status-codes": "^1.0.6",
+    "joi": "^8.0.5",
+    "mongoose": "^4.4.14"
+  },
+  "devDependencies": {
+    "code": "^2.2.1",
+    "glue": "^3.2.0",
+    "lab": "^10.3.2",
+    "npm-check-updates": "^2.6.3",
+    "nsp": "^2.3.2"
+  }
+}
