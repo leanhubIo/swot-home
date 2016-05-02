@@ -9,12 +9,12 @@ const describe = lab.describe;
 const it = lab.it;
 const before = lab.before;
 const after = lab.after;
-// const beforeEach = lab.beforeEach;
+const beforeEach = lab.beforeEach;
 const afterEach = lab.afterEach;
 const expect = Code.expect;
 
 const User = require('../../lib/models/user.model');
-const UserService = require('../../lib/services/user.service');
+const Service = require('../../lib/services/user.service');
 
 Mongoose.Promise = global.Promise; // Personal choice
 
@@ -22,6 +22,11 @@ Mongoose.Promise = global.Promise; // Personal choice
  * Connect once for all tests
  */
 before(() => Mongoose.connect(`mongodb://localhost/swot-home_test_user_service_${Date.now()}`));
+
+beforeEach(() => {
+
+    return User.ensureCustomIndexes();
+});
 
 /**
  * Disconnect after all tests
@@ -37,158 +42,113 @@ afterEach((done) => {
     done();
 });
 
-describe('UserService.save', () => {
+describe('List', () => {
 
-    it('should create a new user', { plan: 10 }, () => {
+    it('should list all the users', { plan: 2 }, () => {
 
-        const candidate = {
-            username: 'u1',
-            email: 'u1@u1.com'
-        };
-        let idUser;
-        return UserService.save(candidate)
-            .then((user) => {
+        const users = [1,2,3].map((i) => new User({ name: `u${i}`, email: `u${i}`, password: `u${i}` }));
+        const saveAll = users.map((usr) => usr.save());
 
-                expect(user).to.exist();
-                expect(user.creationDate).to.exist();
-                expect(user.creationDate).to.be.an.instanceof(Date);
-                expect(user.lastUpdate).to.exist();
-                expect(user.lastUpdate).to.be.an.instanceof(Date);
-                expect(user.lastUpdate - user.creationDate).to.be.below(10);
-                expect(new Date() - user.creationDate).to.be.below(5000);
+        return Promise.all(saveAll)
+            .then(() => Service.list())
+            .then((userList) => {
 
-                idUser = user._id;
-            })
-            .then(() => User.find().exec())
-            .then((users) => {
-
-                expect(users).to.be.an.array();
-                expect(users).to.have.length(1);
-                expect(`${users[0]._id}`).to.equal(`${idUser}`);
+                expect(userList).to.be.an.array();
+                expect(userList).to.have.length(3);
             });
     });
 
-    it('should refuse to create a new user with an existing username', { plan: 5 }, () => {
+    it('should list all the users whose name contains \'3\'', { plan: 3 }, () => {
 
-        const candidate = {
-            username: 'u1',
-            email: 'u1@u1.com'
-        };
-        const user = new User(candidate);
+        const users = [1,2,3].map((i) => new User({ name: `u${i}`, email: `u${i}`, password: `u${i}` }));
+        const saveAll = users.map((usr) => usr.save());
+
+        return Promise.all(saveAll)
+            .then(() => Service.list('3'))
+            .then((userList) => {
+
+                expect(userList).to.be.an.array();
+                expect(userList).to.have.length(1);
+                expect(userList[0].name).to.equal('u3');
+            });
+    });
+});
+
+describe('Save', () => {
+
+    it('should save a new user', { plan: 5 }, () => {
+
+        const i = 1;
+        return Service.save({ name: `u${i}`, email: `u${i}`, password: `u${i}` })
+            .then((user) => {
+
+                expect(user).to.exist();
+                expect(user.password).to.equal('');
+            })
+            .then(() => User.find().exec())
+            .then((userList) => {
+
+                expect(userList).to.be.an.array();
+                expect(userList).to.have.length(1);
+                expect(userList[0].name).to.equal('u1');
+            });
+    });
+
+    it('should not save a new user due to conflict on name', { plan: 4 }, () => {
+
+        const user = new User({ name: 'u1', email: 'u@', password: 'u1' });
+
         return user.save()
-            .then(() => UserService.save(candidate))
+            .then(() => Service.save({ name: 'u1', email: 'u1', password: 'u1' }))
             .catch((err) => {
 
                 expect(err).to.exist();
                 expect(err.output.statusCode).to.equal(HttpStatus.CONFLICT);
             })
             .then(() => User.find().exec())
-            .then((users) => {
+            .then((userList) => {
 
-                expect(users).to.be.an.array();
-                expect(users).to.have.length(1);
-                expect(`${users[0]._id}`).to.equal(`${user._id}`);
+                expect(userList).to.be.an.array();
+                expect(userList).to.have.length(1);
             });
     });
-});
 
-describe('UserService.read', () => {
+    it('should not save a new user due to conflict on email', { plan: 4 }, () => {
 
-    it('should read an existing user', { plan: 2 }, () => {
-
-        const user = new User({
-            username: 'u1',
-            email: 'u1@u1.com'
-        });
+        const user = new User({ name: 'u@', email: 'u1', password: 'u1' });
 
         return user.save()
-            .then(() => UserService.read(user._id))
-            .then((usr) => {
-
-                expect(usr).to.exist();
-                expect(usr.username).to.equal('u1');
-            });
-    });
-
-    it('should not read an non existing user', { plan: 2 }, () => {
-
-        return  UserService.read(Mongoose.Types.ObjectId())
+            .then(() => Service.save({ name: 'u1', email: 'u1', password: 'u1' }))
             .catch((err) => {
 
-                expect(err).to.exists();
-                expect(err.output.statusCode).to.equal(HttpStatus.NOT_FOUND);
-            });
-    });
-});
-
-/*describe('UserService.update', () => {
-
-    it('should update an existing user', { plan: 4 }, () => {
-
-        const user = new User({
-            username: 'u1',
-            email: 'u1@u1.com'
-        });
-
-        return user.save()
-            .then(() => UserService.update(user._id, { username: 'u2' }))
-            .then((usr) => {
-
-                expect(usr).to.exist();
-                expect(usr.username).to.equal('u2');
-            })
-            .then(() => User.findById(user._id).exec())
-            .then((usr) => {
-
-                expect(usr).to.exist();
-                expect(usr.username).to.equal('u2');
-            });
-    });
-
-    it('should not update an existing user if it creates a conflict', { plan: 4 }, () => {
-
-        const user = new User({
-            username: 'u1',
-            email: 'u1@u1.com'
-        });
-
-        const user2 = new User({
-            username: 'u2',
-            email: 'u1@u1.com'
-        });
-
-        return Promise.all([user.save(), user2.save()])
-            .then(() => UserService.update(user._id, { username: 'u2' }))
-            .catch((err) => {
-
-                expect(err).to.exists();
+                expect(err).to.exist();
                 expect(err.output.statusCode).to.equal(HttpStatus.CONFLICT);
             })
-            .then(() => User.findById(user._id).exec())
-            .then((usr) => {
+            .then(() => User.find().exec())
+            .then((userList) => {
 
-                expect(usr).to.exist();
-                expect(usr.username).to.equal('u1');
+                expect(userList).to.be.an.array();
+                expect(userList).to.have.length(1);
             });
     });
 
-    it('should not update an non existing user', { plan: 2 }, () => {
+    it('should not save a new user due to conflict on tokens', { plan: 4 }, () => {
 
-        return  UserService.update(Mongoose.Types.ObjectId(), { username: 'u2' })
+        const user = new User({ name: 'u@', email: 'u@', password: 'u1', token: 't' });
+
+        return user.save()
+            .then(() => Service.save({ name: 'u1', email: 'u1', password: 'u1', token: 't' }))
             .catch((err) => {
 
-                expect(err).to.exists();
-                expect(err.output.statusCode).to.equal(HttpStatus.NOT_FOUND);
+                expect(err).to.exist();
+                expect(err.output.statusCode).to.equal(HttpStatus.CONFLICT);
+            })
+            .then(() => User.find().exec())
+            .then((userList) => {
+
+                expect(userList).to.be.an.array();
+                expect(userList).to.have.length(1);
             });
     });
+});
 
-    it('should not update an non existing user', { plan: 2 }, () => {
-
-        return  UserService.update(Mongoose.Types.ObjectId(), { username: 'u2' }, { log: console.log.bind({}, new Date(), 'USER: ') })
-            .catch((err) => {
-
-                expect(err).to.exists();
-                expect(err.output.statusCode).to.equal(HttpStatus.NOT_FOUND);
-            });
-    });
-});*/
