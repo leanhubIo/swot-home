@@ -1,5 +1,6 @@
 'use strict';
 const Mongoose = require('mongoose');
+const Proxyquire = require('proxyquire');
 const Code = require('code'); // assertion lib
 const Lab = require('lab'); // test runner
 const lab = exports.lab = Lab.script();
@@ -104,4 +105,67 @@ describe('validateSimple', () => {
                 });
             });
     });
+});
+
+describe('login', () => {
+
+    it('should login a user', { plan: 5 }, () => {
+
+        const user = new User({ name: 'u1', email: 'u1', password: 'p', token: 't' });
+        return user.save()
+            .then(() => Service.login(user._id))
+            .then((token) => {
+
+                expect(token).to.exist();
+                expect(token).to.be.a.string();
+                expect(token.length).to.be.above(48);
+                return token;
+            })
+            .then((token) => User.findOne({ token: token }).exec())
+            .then((userFound) => {
+
+                expect(userFound).to.exist();
+                expect(userFound._id + '').to.equal(user._id + '');
+            });
+    });
+
+    it('should not login a non user', { plan: 1 }, () => {
+
+        return Service.login(Mongoose.Types.ObjectId())
+            .catch((err) => {
+
+                expect(err).to.exist();
+            });
+    });
+});
+
+describe('validateToken', () => {
+
+    it('should validate a token that exists', { plan: 3 }, (done) => {
+
+        const user = new User({ name: 'u1', email: 'u1', password: 'p', token: 't' });
+        user.save()
+            .then(() => {
+
+                Service.validateToken('t', (err, auth, usr) => {
+
+                    expect(err).to.not.exist();
+                    expect(auth).to.be.true();
+                    expect(usr._id + '').to.equal(user._id + '');
+                    done();
+                });
+            });
+    });
+
+    it('should not validate a token that does not exist', { plan: 4 }, (done) => {
+
+        Service.validateToken('t', (err, auth, usr) => {
+
+            expect(err).to.exist();
+            expect(auth).to.be.false();
+            expect(usr).to.not.exist();
+            done();
+        });
+    });
+
 });

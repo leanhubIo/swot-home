@@ -24,7 +24,8 @@
     "hapi-auth-bearer-token": "^4.1.0",
     "http-status-codes": "^1.0.6",
     "joi": "^8.0.5",
-    "mongoose": "^4.4.14"
+    "mongoose": "^4.4.14",
+    "proxyquire": "^1.7.4"
   },
   "devDependencies": {
     "code": "^2.2.1",
