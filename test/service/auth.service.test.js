@@ -1,6 +1,5 @@
 'use strict';
 const Mongoose = require('mongoose');
-const Proxyquire = require('proxyquire');
 const Code = require('code'); // assertion lib
 const Lab = require('lab'); // test runner
 const lab = exports.lab = Lab.script();
@@ -167,5 +166,4 @@ describe('validateToken', () => {
             done();
         });
     });
-
 });

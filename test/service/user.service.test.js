@@ -74,6 +74,33 @@ describe('List', () => {
     });
 });
 
+describe('Read', () => {
+
+    it('should read a user', { plan: 2 }, () => {
+
+        const user = new User({ name: 'u1', email: 'u@', password: 'u1' });
+
+        return user.save()
+            .then(() => Service.read(user._id))
+            .then((usr) => {
+
+                expect(usr).to.exist();
+                expect(usr.name).to.equal('u1');
+            });
+    });
+
+    it('should not read any user', { plan: 2 }, () => {
+
+        return Service.read(Mongoose.Types.ObjectId())
+            .catch((err) => {
+
+                expect(err).to.exist();
+                expect(err.output.statusCode).to.equal(HttpStatus.NOT_FOUND);
+            });
+    });
+
+});
+
 describe('Save', () => {
 
     it('should save a new user', { plan: 5 }, () => {
