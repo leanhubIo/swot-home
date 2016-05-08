@@ -116,9 +116,9 @@ describe('login', () => {
             .then((token) => {
 
                 expect(token).to.exist();
-                expect(token).to.be.a.string();
-                expect(token.length).to.be.above(48);
-                return token;
+                expect(token.token).to.be.a.string();
+                expect(token.token.length).to.be.above(48);
+                return token.token;
             })
             .then((token) => User.findOne({ token: token }).exec())
             .then((userFound) => {
