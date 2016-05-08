@@ -110,7 +110,7 @@ describe('login', () => {
 
     it('should login a user', { plan: 5 }, () => {
 
-        const user = new User({ name: 'u1', email: 'u1', password: 'p', token: 't' });
+        const user = new User({ name: 'u1', email: 'u1', password: 'p' });
         return user.save()
             .then(() => Service.login(user._id))
             .then((token) => {
@@ -118,6 +118,26 @@ describe('login', () => {
                 expect(token).to.exist();
                 expect(token.token).to.be.a.string();
                 expect(token.token.length).to.be.above(48);
+                return token.token;
+            })
+            .then((token) => User.findOne({ token: token }).exec())
+            .then((userFound) => {
+
+                expect(userFound).to.exist();
+                expect(userFound._id + '').to.equal(user._id + '');
+            });
+    });
+
+    it('should login a user with an existing token', { plan: 5 }, () => {
+
+        const user = new User({ name: 'u1', email: 'u1', password: 'p', token: 'mySecret' });
+        return user.save()
+            .then(() => Service.login(user._id))
+            .then((token) => {
+
+                expect(token).to.exist();
+                expect(token.token).to.be.a.string();
+                expect(token.token).to.equal('mySecret');
                 return token.token;
             })
             .then((token) => User.findOne({ token: token }).exec())
